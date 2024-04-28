@@ -37,6 +37,7 @@ impl PartialEq for Dimension {
 pub enum MatrixError {
     InvalidColumnLen,
     DifferentDimensions,
+    IndexOutOfBounds,
 }
 
 impl Matrix {
@@ -45,9 +46,15 @@ impl Matrix {
         let dim = Dimension::new(row, col);
         Self { dim, data }
     }
-
-    fn with_data(data: &[&[i32]]) -> Self {
-        let data: Vec<Vec<i32>> = data.into_iter().map(|row| row.to_vec()).collect();
+    fn with_data<T, U>(data: T) -> Self
+    where
+        T: IntoIterator<Item = U>,
+        U: IntoIterator<Item = i32>,
+    {
+        let data: Vec<Vec<i32>> = data
+            .into_iter()
+            .map(|row| row.into_iter().collect())
+            .collect();
         let dim = Dimension::new(data.len(), data[0].len());
         Self { dim, data }
     }
@@ -73,19 +80,45 @@ impl Matrix {
         &self,
         row_start: usize,
         col_start: usize,
-        row_size: usize,
-        col_size: usize,
+        row_end: usize,
+        col_end: usize,
     ) -> Result<Self, MatrixError> {
-        // if row_start > self.row() || col_start > self.col() || r
-        todo!()
+        if row_start > self.row()
+            || col_start > self.col()
+            || row_end > self.row()
+            || col_end > self.col()
+        {
+            return Err(MatrixError::IndexOutOfBounds);
+        }
+
+        let data: Vec<Vec<i32>> = (row_start..=row_end)
+            .into_iter()
+            .map(|row| self[row][col_start..=col_end].to_vec())
+            .collect();
+
+        Ok(Matrix::with_data(data))
     }
 
     // fn determinant(&self) -> Option<usize> {
+    //     todo!();
     //     if !self.is_square_matrix() {
     //         return None;
     //     }
     //
+    //     if self.row() == 2 {
+    //         return Ok(self[0][0] * self[1][1] - self[0][1] * self[1][0]);
+    //     }
     //
+    //     let mut det = 0;
+    //
+    //     for i in 0 .. self.col() {
+    //         let sub_det = self[0][i] * self.sub_matrix(row_start, col_start, row_end, col_end)
+    //         if i % 2 == 0 {
+    //
+    //         } else {
+    //
+    //         }
+    //     }
     // }
 
     fn row(&self) -> usize {
@@ -225,14 +258,9 @@ impl PartialEq for Matrix {
 }
 
 #[test]
-fn matrix_test() {
-    let mut matrix = Matrix::with_data(&[&[1, 2, 3], &[4, 5, 6], &[7, 8, 9]]);
-    let matrix_new = matrix.clone();
-
-    matrix.add_matrix(&matrix_new).unwrap();
-
-    assert_eq!(
-        matrix,
-        Matrix::with_data(&[&[2, 4, 6], &[8, 10, 12], &[14, 16, 18]])
-    );
+fn sub_matrix_test() {
+    let matrix = Matrix::with_data([[1, 2, 3], [4, 5, 6], [7, 8, 9]]);
+    let sub_matrix = matrix.sub_matrix(0, 0, 1, 1);
+    let mat2 = Matrix::with_data([[1, 2], [4, 5]]);
+    assert_eq!(sub_matrix.unwrap(), mat2);
 }
