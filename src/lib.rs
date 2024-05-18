@@ -1,4 +1,4 @@
-use std::{fmt, ops::{Add, Index, IndexMut, Mul, Sub}};
+use std::ops::{Add, Index, IndexMut, Mul, Sub};
 
 #[derive(Debug)]
 pub enum MatrixError {
@@ -48,11 +48,11 @@ impl Matrix {
         Ok(())
     }
     
-    pub fn row(&self) -> usize {
+    pub fn row_len(&self) -> usize {
         self.dim.row
     }
 
-    pub fn col(&self) -> usize {
+    pub fn col_len(&self) -> usize {
         self.dim.col
     }
 
@@ -64,14 +64,14 @@ impl Matrix {
         if !self.is_square_matrix() {
             return Err(MatrixError::ExpectedSquareMatrix);
         }
-        Ok((0..self.row()).map(|i| self[i][i]).collect())
+        Ok((0..self.row_len()).map(|i| self[i][i]).collect())
     }
 
     pub fn counter_diag(&self) -> Result<Vec<i32>, MatrixError> {
         if !self.is_square_matrix() {
             return Err(MatrixError::ExpectedSquareMatrix);
         }
-        let row_size = self.row();
+        let row_size = self.row_len();
         Ok((0..row_size).map(|i| self[i][row_size - i - 1]).collect())
     }
 
@@ -82,10 +82,10 @@ impl Matrix {
         row_end: usize,
         col_end: usize,
     ) -> Result<Self, MatrixError> {
-        if row_start > self.row()
-            || col_start > self.col()
-            || row_end > self.row()
-            || col_end > self.col()
+        if row_start > self.row_len()
+            || col_start > self.col_len()
+            || row_end > self.row_len()
+            || col_end > self.col_len()
         {
             return Err(MatrixError::IndexOutOfBounds);
         }
@@ -99,8 +99,8 @@ impl Matrix {
     }
 
     pub fn add_matrix(&mut self, add_matrix: &Self) -> Result<(), MatrixError> {
-        let col = add_matrix.col();
-        let row = add_matrix.row();
+        let col = add_matrix.col_len();
+        let row = add_matrix.row_len();
         if self.dim != add_matrix.dim {
             return Err(MatrixError::DifferentDimensions);
         }
@@ -114,16 +114,6 @@ impl Matrix {
         Ok(())
     }
 }
-
-// impl fmt::Display for Matrix {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         for row in 0 .. self.col() {
-                
-//         }
-
-//         Ok(())
-//     }
-// }
 
 impl Add for Matrix {
     type Output = Result<Self, MatrixError>;
@@ -165,12 +155,12 @@ impl IndexMut<usize> for Matrix {
 
 impl PartialEq for Matrix {
     fn eq(&self, other: &Self) -> bool {
-        if self.row() != other.row() || self.col() != other.col() {
+        if self.row_len() != other.row_len() || self.col_len() != other.col_len() {
             return false;
         }
 
-        for i in 0..self.row() {
-            for j in 0..self.col() {
+        for i in 0..self.row_len() {
+            for j in 0..self.col_len() {
                 if self[i][j] != other[i][j] {
                     return false;
                 }
@@ -191,13 +181,6 @@ impl Dimension {
     pub fn new(row: usize, col: usize) -> Self {
         Self { row, col }
     }
-    fn get_row(&self) -> usize {
-        self.row
-    }
-
-    fn get_col(&self) -> usize {
-        self.col
-    }
 }
 
 impl PartialEq for Dimension {
@@ -206,24 +189,10 @@ impl PartialEq for Dimension {
     }
 }
 
-// #[macro_export]
-// macro_rules! matrix {
-//     ($($($val: expr), +); +) => {
-//         {
-//             let data = [
-//                 $([$($val), +]), +
-//             ];
-//             let dim = crate::Dimension::new(data.len(), data[0].len());
-
-//             Matrix { dim, data.into_iter(). }
-//         }
-//     }
-// }
-
 pub fn add_matrices(matrix1: &Matrix, matrix2: &Matrix) -> Result<Matrix, MatrixError> {
-    let (row, col) = (matrix1.row(), matrix1.col());
+    let (row, col) = (matrix1.row_len(), matrix1.col_len());
 
-    if row != matrix2.row() || col != matrix2.col() {
+    if row != matrix2.row_len() || col != matrix2.col_len() {
         return Err(MatrixError::DifferentDimensions);
     }
 
@@ -239,8 +208,8 @@ pub fn add_matrices(matrix1: &Matrix, matrix2: &Matrix) -> Result<Matrix, Matrix
 }
 
 pub fn product_matrices(matrix1: &Matrix, matrix2: &Matrix) -> Result<Matrix, MatrixError> {
-    let (row1, col1) = (matrix1.row(), matrix1.col());
-    let (row2, col2) = (matrix2.row(), matrix2.col());
+    let (row1, col1) = (matrix1.row_len(), matrix1.col_len());
+    let (row2, col2) = (matrix2.row_len(), matrix2.col_len());
 
     if col1 != row2 {
         return Err(MatrixError::DifferentDimensions);
@@ -266,8 +235,8 @@ pub fn subtract_matrices(matrix1: &Matrix, matrix2: &Matrix) -> Result<Matrix, M
 
     let mut result_matrix = Matrix::new_with_dim(matrix1.dim);
 
-    for i in 0..matrix1.row() {
-        for j in 0..matrix1.col() {
+    for i in 0..matrix1.row_len() {
+        for j in 0..matrix1.col_len() {
             result_matrix[i][j] = matrix1[i][j] - matrix2[i][j];
         }
     }
@@ -300,22 +269,5 @@ mod tests {
     #[test]
     fn counter_diag_elements() {
         assert_eq!(MATRIX.counter_diag().unwrap(), vec![3, 5, 7]);
-    }
-
-    macro_rules! matrix {
-        ($($($val: expr), +); +) => {
-            {
-                let data = vec![
-                    $(vec![$($val),+]), +
-                ];
-                
-                Matrix::with_data(data)
-            }
-        };
-    }
-
-    #[test]
-    fn macro_test() {           
-        assert_eq!(matrix!(1, 2, 3; 4, 5, 6; 7, 8, 9), Matrix::with_data([[1, 2, 3], [4, 5, 6], [7, 8, 9]]));
     }
 }
